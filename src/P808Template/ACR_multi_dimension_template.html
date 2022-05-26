@@ -122,7 +122,7 @@ General configuration file:
  - allowedMaxContinuesSessionDurationInMinutes: how log is the maximum continue session. A break of 10min will be forced
 */
 
-/*
+
 var config ={
 	cookieName:"{{cfg.cookie_name}}",
 	qualificationCookieName:"{{cfg.qual_cookie_name}}",
@@ -159,46 +159,6 @@ var config ={
 	cmp_pass_threshold: {{cfg.cmp_pass_threshold}},
 	emailAddress: "{{cfg.contact_email}}"
 }
-*/
-
-var config ={
-	cookieName:"itu_p808_IS22db1",
-	qualificationCookieName:"itu_p808_IS22db1_123",
-	qualificationValidFor:43200,
-    forceRetrainingInHours:1,
-    showSetupEveryMinutes:30,
-    debug:"false",
-    questionUrls: ['https://nisqa-challenge-db.s3.amazonaws.com/db1/c00001_ref_t05_9_800ms_split_0.wav', 'https://nisqa-challenge-db.s3.amazonaws.com/db1/c00005_ref_t08_1_800ms_split_4.wav', 'https://nisqa-challenge-db.s3.amazonaws.com/db1/c00008_ref_t08_0_0ms_split_2.wav',
-	"https://nisqa-challenge-db.s3.amazonaws.com/db1/tps/c00001_ref_t07_7_1600ms_split_4_1_short.wav"
-	],
-    trainingUrls: ['https://nisqa-challenge-db.s3.amazonaws.com/db1/c00001_ref_t05_9_800ms_split_0.wav', 'https://nisqa-challenge-db.s3.amazonaws.com/db1/c00005_ref_t08_1_800ms_split_4.wav', 'https://nisqa-challenge-db.s3.amazonaws.com/db1/c00008_ref_t08_0_0ms_split_2.wav', 'https://nisqa-challenge-db.s3.amazonaws.com/db1/c00011_ref_t07_9_1600ms_split_0.wav', 'https://nisqa-challenge-db.s3.amazonaws.com/db1/c00031_ref_t03_1_0ms_split_2.wav', 'https://nisqa-challenge-db.s3.amazonaws.com/db1/c00035_ref_t07_1_0ms_split_8.wav', 'https://nisqa-challenge-db.s3.amazonaws.com/db1/c00062_ref_t00_10_800ms_split_4.wav', 'https://nisqa-challenge-db.s3.amazonaws.com/db1/tps/c00001_ref_t07_7_1600ms_split_4_1_short.wav'],
-
-    knownQuestionInTrainingUrl:"https://nisqa-challenge-db.s3.amazonaws.com/db1/tps/c00001_ref_t07_7_1600ms_split_4_1_short.wav",
-    knownQuestionInTrainingAns: "1",
-    knownQuestionUrl:"https://nisqa-challenge-db.s3.amazonaws.com/db1/tps/c00001_ref_t07_7_1600ms_split_4_1_short.wav",
-    knownQuestionAns: "1",
-    goldClipURL:"${gold_clips}",
-    goldClipAns:"${gold_clips_ans}",
-    randomizeTrainingQuestions:"true",
-    randomizeRatingQuestions:"true",
-    allowedMaxHITsInProject:45,
-	allowedMaxContinuesSessionDurationInMinutes:45,
-	qualification:{
-		mother_tongue: ["english","en"],
-		ld_in: ["in-ear", "over-ear"],
-		working_area: "N",
-		hearing: "normal",
- 		num1: "Mjg5",
-        num2: "Mjg2",
-        num3: "NjI4",
-        num4: "Mjgy",
-        num5: "ODE1"
-	},
-	cmp_correct_answers: ['aHR0cHM6Ly9hdWRpb3NhbXBsZXNwODA4LmJsb2IuY29yZS53aW5kb3dzLm5ldC9wODA4LWFzc2V0cy9jbGlwcy9zYW1wbGVfam5kLzUwU19mZW1hbGUxLndhdg==', 'aHR0cHM6Ly9hdWRpb3NhbXBsZXNwODA4LmJsb2IuY29yZS53aW5kb3dzLm5ldC9wODA4LWFzc2V0cy9jbGlwcy9zYW1wbGVfam5kLzUwU19mZW1hbGUyLndhdg==', 'aHR0cHM6Ly9hdWRpb3NhbXBsZXNwODA4LmJsb2IuY29yZS53aW5kb3dzLm5ldC9wODA4LWFzc2V0cy9jbGlwcy9zYW1wbGVfam5kLzUwU19tYWxlMS53YXY=', 'aHR0cHM6Ly9hdWRpb3NhbXBsZXNwODA4LmJsb2IuY29yZS53aW5kb3dzLm5ldC9wODA4LWFzc2V0cy9jbGlwcy9zYW1wbGVfam5kLzUwU19tYWxlMi53YXY='],
-	cmp_max_n_feedback : 4,
-	cmp_pass_threshold: 2,
-	emailAddress: "qul.mturk@gmail.com"
-}
 
 // if performing of this assignment is already counted
 var hitCounterIncreased = false;
@@ -223,6 +183,8 @@ $(function() {
 		generate_rating_section();
 		generate_questionnaire_info();
 		avoidAnsweringBeforeListeningThrough();
+		preventTabsChangeBeforeRateTraining();
+		preventTabsChangeBeforeRateRating();
 		cookie_debug_status="";
 		// given cookie availability disable the qualification
 		qual_passed= readCookie(config['qualificationCookieName']);
@@ -693,9 +655,15 @@ function showNextQuestionInRatingSection(){
 	if (id+2==count){
 		$('#next-rating').addClass('disabled');
 	}
-	id=id+2;
-	$('#nav-tab-ul li:nth-child('+id+') a').tab('show');
+	if (!($('input[name="q'+ (id + 1) +'_slide"]').hasClass("slider_hide"))){
+		id=id+2;
+		$('#nav-tab-ul li:nth-child('+id+') a').tab('show');
+	} else {
+		alert("Please rate all");
+	}
 }
+
+
 
 /*
 	Callback when "Previous" in Rating section is clicked.
@@ -716,8 +684,12 @@ function showNextQuestionInTrainingSection(){
 	var count = $("#trainingTabs li").length;
 	id=$("#trainingTabs li.active").index();
 	if (id+1!=count){
-		id=id+2;
-		$('#trainingTabs li:nth-child('+id+') a').tab('show');
+		if (!($('input[name="t'+ (id + 1) +'_slide"]').hasClass("slider_hide"))){
+			id=id+2;
+			$('#trainingTabs li:nth-child('+id+') a').tab('show');
+		} else {
+			alert("Please rate all");
+		}
 	}else{
 		// last next is called
 		setTimeout(function (){
@@ -771,6 +743,30 @@ function enableSliderAfterPlayedAudioTraining(){
 	for (i = 0; i < config['trainingUrls'].length; i++) {
 		$('input[name="t{0}_slide"]'.f(i+1)).on('change', enableSlider);
 	}
+}
+
+function preventTabsChangeBeforeRateTraining(){
+	$('a[name="training"]').on('click', function (e) {
+		var count = $("#trainingTabs li").length;
+		id=$("#trainingTabs li.active").index();
+		if (($('input[name="t'+ (id + 1) +'_slide"]').hasClass("slider_hide"))){
+			console.info("train");
+			e.stopImmediatePropagation();
+			alert('Please rate all');
+		}
+	});
+}
+
+function preventTabsChangeBeforeRateRating(){
+	$('a[name="rating"]').on('click', function (e) {
+		var count = $("#nav-tab-ul li").length;
+		id=$("#nav-tab-ul li.active").index();
+		if (($('input[name="q'+ (id + 1) +'_slide"]').hasClass("slider_hide"))){
+			console.info("rate");
+			e.stopImmediatePropagation();
+			alert('Please rate all');
+		}
+	});
 }
 
 function enableSliderAfterPlayedAudioQ(){
@@ -938,9 +934,10 @@ function avoidAnsweringBeforeListeningThrough(){
 function onValueChangeForGoldQuestion(){
 	let ans = $( this ).val()
 	let expectedVal = parseInt(config['goldClipAns'])
-	if ( expectedVal -1 <=ans && ans <= expectedVal +1 )
+	if ( expectedVal -1 <=ans && ans <= expectedVal +1 ){
 		$('#gq_check').val(0);
-	else
+		enableSliderSpecialQuestion();
+	} else
 		$('#gq_check').val(-1);
 	console.log($('#gq_check').val())
 }
@@ -950,11 +947,18 @@ function onValueChangeForGoldQuestion(){
 	if the answer is correct, change the value of tp_check to 0.
 */
 function onValueChangeForTpQuestion(){
-	if ($( this ).val()  == parseInt(config['knownQuestionAns']))
+	if ($( this ).val()  == parseInt(config['knownQuestionAns'])){
 		$('#tp_check').val(0);
-	else
+		enableSliderSpecialQuestion();
+} else
 		$('#tp_check').val(-1);
 	//console.log("gc_check"+$('#tp_check').val())
+}
+
+function enableSliderSpecialQuestion(){
+	var count = $("#nav-tab-ul li").length;
+	id=$("#nav-tab-ul li.active").index() + 1;
+	$('input[name="q'+ id +'_slide"]').addClass('slider').removeClass('slider_hide');	
 }
 
 /*
@@ -1076,7 +1080,7 @@ function shuffle(a) {
 */
 function generate_training_section(){
 	// TODO Here the Tabs and Tabscontent are generated
-	acr_nav_tab = '<li class="nav-item {1}"><a class="nav-link " data-toggle="tab"  href="#T{0}-panel" id="T{0}-tab " role="tab" aria-controls="T{0}" {2}>Q. {0}</a></li>';
+	acr_nav_tab = '<li class="nav-item {1}"><a class="nav-link " data-toggle="tab" name="training" href="#T{0}-panel" id="T{0}-tab " role="tab" aria-controls="T{0}" {2}>Q. {0}</a></li>';
 	acr_tab =`<div class="tab-pane fade {2}" id="T{0}-panel" role="tabpanel" aria-labelledby="T{0}-tab">
 				<p></p>
 				<div class="row">
@@ -1139,7 +1143,7 @@ function generate_training_section(){
 								<div class="col-sm-4"></div>
 								<div class="col-sm-4 infobox right-box"  title="Synonyms for Not Noisy" ><b>Not noisy:</b></br>Clean </br>Clean</br>Clean</div>
 							</div>
-  							<input type="range" min="0" max="100" value="-1" class="slider_hide" id="T{0}-noise-slider" name="t{0}_slide">
+  							<input type="range" min="0" max="100" class="slider_hide" id="T{0}-noise-slider" name="t{0}_slide">
 							<label for="noisy" class="pull-left" style="font-weight:normal;">Noisy</label>
 							<label for="" class="pull-right" style="font-weight:normal;">Not Noisy</label>
 						</div></br></br></br>
@@ -1152,7 +1156,7 @@ function generate_training_section(){
 								<div class="col-sm-4"> </div>   
 								<div class="col-sm-4 infobox right-box" title="Synonyms for Continuous" ><b>Continuous:</b></br>Smooth</br>Steady</br>Clean</div> 
 							</div>
-  							<input type="range" min="0" max="100" value="-1" class="slider_hide" id="T{0}-discontinuity-slider" name="t{0}_slide">
+  							<input type="range" min="0" max="100" class="slider_hide" id="T{0}-discontinuity-slider" name="t{0}_slide">
 							<label for="discontinous" class="pull-left" style="font-weight:normal;">Discontinuous</label>
 							<label for="" class="pull-right" style="font-weight:normal;">Continuous</label>
 						</div></br></br></br>
@@ -1165,7 +1169,7 @@ function generate_training_section(){
 								<div class="col-sm-4"></div>
 								<div class="col-sm-4 infobox right-box" title="Synonyms for Uncolored" ><b>Uncolored</b></br>Bright </br> Natural </br> Full</div>
 							</div>
-  							<input type="range" min="0" max="100" value="-1" class="slider_hide" id="T{0}-coloration-slider" name="t{0}_slide">
+  							<input type="range" min="0" max="100" class="slider_hide" id="T{0}-coloration-slider" name="t{0}_slide">
 							<label for="" class="pull-left" style="font-weight:normal;">Colored</label>
 							<label for="" class="pull-right" style="font-weight:normal;">Uncolored</label>
 						</div></br></br></br>
@@ -1178,7 +1182,7 @@ function generate_training_section(){
 								<div class="col-sm-4"></div>
 								<div class="col-sm-4 infobox right-box"><b>Optimal Loudness</b></br>Pleasant</br>Pleasant</br>Constant</div>
 							</div>				
-  							<input type="range" min="0" max="100" value="-1" class="slider_hide" id="T{0}-loudness-slider" name="t{0}_slide">
+  							<input type="range" min="0" max="100" class="slider_hide" id="T{0}-loudness-slider" name="t{0}_slide">
 							<label for="" class="pull-left" style="font-weight:normal;">Non-optimal loudness</label>
 							<label for="" class="pull-right" style="font-weight:normal;">Optimal Loudness</label>
 						</div></br></br></br>
@@ -1298,7 +1302,7 @@ function generate_questionnaire_info(){
 	Generate rating section
 */
 function generate_rating_section(){
-	acr_nav_tab = '<li class="nav-item {1}"><a class="nav-link" data-toggle="tab" href="#Q{0}-panel" id="Q{0}-tab" role="tab" aria-controls="Q{0}" {2}>Q. {0}</a></li>';
+	acr_nav_tab = '<li class="nav-item {1}"><a class="nav-link" name="rating" data-toggle="tab" href="#Q{0}-panel" id="Q{0}-tab" role="tab" aria-controls="Q{0}" {2}>Q. {0}</a></li>';
 	acr_tab =`<div class="tab-pane fade {2}" id="Q{0}-panel" role="tabpanel" aria-labelledby="q{0}-tab">
 				<p></p>
 				<div class="row">
@@ -1360,7 +1364,7 @@ function generate_rating_section(){
 								<div class="col-sm-4"></div>
 								<div class="col-sm-4 infobox right-box" title="Synonyms for Not Noisy" ><b>Not noisy:</b></br>Clean </br>Clean</br>Clean</div>
 							</div>
-  							<input type="range" min="0" max="100" value="-1" class="slider_hide" id="q{0}-noise-slider" name="q{0}_slide">
+  							<input type="range" min="0" max="100" class="slider_hide" id="q{0}-noise-slider" name="q{0}_slide">
 							<label for="" class="pull-left" style="font-weight:normal;">Noisy</label>
 							<label for="" class="pull-right" style="font-weight:normal;">Not Noisy</label>
 						</div></br></br></br>
@@ -1373,7 +1377,7 @@ function generate_rating_section(){
 								<div class="col-sm-4"> </div>   
 								<div class="col-sm-4 infobox right-box" title="Synonyms for Continuous" ><b>Continuous:</b></br>Smooth</br>Steady</br>Clean</div> 
 							</div>
-  							<input type="range" min="0" max="100" value="-1" class="slider_hide" id="q{0}-discontinuity-slider" name="q{0}_slide">
+  							<input type="range" min="0" max="100" class="slider_hide" id="q{0}-discontinuity-slider" name="q{0}_slide">
 							<label for="" class="pull-left" style="font-weight:normal;">Discontinuous</label>
 							<label for="" class="pull-right" style="font-weight:normal;">Continuous</label>
 						</div></br></br></br>
@@ -1386,7 +1390,7 @@ function generate_rating_section(){
 								<div class="col-sm-4"></div>
 								<div class="col-sm-4 infobox right-box" title="Synonyms for Uncolored" ><b>Uncolored</b></br>Bright </br> Natural </br> Full</div>
 							</div>
-  							<input type="range" min="0" max="100" value="-1" class="slider_hide" id="q{0}-coloration-slider" name="q{0}_slide">
+  							<input type="range" min="0" max="100" class="slider_hide" id="q{0}-coloration-slider" name="q{0}_slide">
 							<label for="" class="pull-left" style="font-weight:normal;">Colored</label>
 							<label for="" class="pull-right" style="font-weight:normal;">Uncolored</label>
 						</div></br></br></br>
@@ -1399,7 +1403,7 @@ function generate_rating_section(){
 								<div class="col-sm-4"></div>
 								<div class="col-sm-4 infobox right-box"><b>Optimal Loudness</b></br>Pleasant</br>Pleasant</br>Constant</div>
 							</div>				
-  							<input type="range" min="0" max="100" value="-1" class="slider_hide" id="q{0}-loudness-slider" name="q{0}_slide">
+  							<input type="range" min="0" max="100" class="slider_hide" id="q{0}-loudness-slider" name="q{0}_slide">
 							<label for="" class="pull-left" style="font-weight:normal;">Non-optimal loudness</label>
 							<label for="" class="pull-right" style="font-weight:normal;">Optimal Loudness</label>
 						</div></br></br></br>
