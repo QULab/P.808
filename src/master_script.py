@@ -433,6 +433,7 @@ def prepare_basic_cfg(df):
 
     only_hearing_test = df[['hearing_test_url', 'hearing_test_ans']].copy()
     only_hearing_test.dropna(subset=["hearing_test_url"], inplace=True)
+
     sample = only_hearing_test.sample(n=4)
     sample = sample.append({"hearing_test_url": clear_sample_url,
                             "hearing_test_ans": clear_sample_ans}, ignore_index=True)
@@ -447,7 +448,6 @@ def prepare_basic_cfg(df):
             i += 1
         config[f"num{index}_url"] = row["hearing_test_url"]
         config[f"num{index}_ans"] = base64.b64encode(ans.encode('ascii')).decode('ascii')
-
     # set environment test
     config["cmp_correct_answers"] = base64_urls
     config["cmp_max_n_feedback"] = 4
