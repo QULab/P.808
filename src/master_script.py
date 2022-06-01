@@ -380,7 +380,7 @@ async def prepare_csv_for_create_input(cfg, test_method, clips, gold, trapping, 
         df_clips = pd.DataFrame({'rating_clips': rating_clips})
 
     df_general = pd.read_csv(general)
-    if test_method in ["acr", "p835", "echo_impairment_test"]:
+    if test_method in ["acr", "p835", "echo_impairment_test", 'psamd']:
         if gold and os.path.exists(gold):
             df_gold = pd.read_csv(gold)
         else:
@@ -490,6 +490,9 @@ def get_path(test_method, is_p831_fest):
     p831_dcr_cfg_template_path = os.path.join(os.path.dirname(__file__),
                                               'assets_master_script/dcr_ccr_result_parser_template.cfg')
 
+    # for psamd
+    psamd_template_path = os.path.join(os.path.dirname(__file__), 'P808Template/ACR_multi_dimension_template.html')
+
     method_to_template = { # (method, is_p831_fest)
         ('acr', True): (p831_acr_template_path, p831_acr_cfg_template_path),
         ('dcr', True): (p831_dcr_template_path, p831_dcr_cfg_template_path),
@@ -498,7 +501,8 @@ def get_path(test_method, is_p831_fest):
         ('dcr', False): (dcr_template_path, dcr_ccr_cfg_template_path),
         ('ccr', False): (ccr_template_path, dcr_ccr_cfg_template_path),
         ('p835', False): (p835_template_path, acr_cfg_template_path),
-        ('echo_impairment_test', False): (echo_impairment_test_template_path, acr_cfg_template_path)
+        ('echo_impairment_test', False): (echo_impairment_test_template_path, acr_cfg_template_path),
+        ('psamd', False): (psamd_template_path, acr_cfg_template_path),
     }
 
     template_path, cfg_path = method_to_template[(test_method, is_p831_fest)]
@@ -575,7 +579,7 @@ async def main(cfg, test_method, args):
     output_file_name = f"{args.project}_p831_{test_method}.html" if is_p831_fest else f"{args.project}_{test_method}.html"
     output_html_file = os.path.join(output_dir, output_file_name)
 
-    if test_method == 'acr':
+    if test_method in ['acr', 'psamd']:
         await create_hit_app_acr(cfg_hit_app, template_path, output_html_file, args.training_clips,
                                  args.trapping_clips, cfg['create_input'], cfg['TrappingQuestions'], general_cfg)
     elif test_method in ['p835', 'echo_impairment_test']:
@@ -589,7 +593,7 @@ async def main(cfg, test_method, args):
     output_cfg_file_name = f"{args.project}_p831_{test_method}_result_parser.cfg" if is_p831_fest else f"{args.project}_{test_method}_result_parser.cfg"
     output_cfg_file = os.path.join(output_dir, output_cfg_file_name)
 
-    if test_method in ['acr', 'p835', 'echo_impairment_test']:
+    if test_method in ['acr', 'p835', 'echo_impairment_test', 'psamd']:
         create_analyzer_cfg_general(cfg, cfg_hit_app, cfg_path, output_cfg_file)
     else:
         create_analyzer_cfg_dcr_ccr(cfg, cfg_path, output_cfg_file)
@@ -601,7 +605,7 @@ if __name__ == '__main__':
     parser.add_argument("--project", help="Name of the project", required=True)
     parser.add_argument("--cfg", help="Configuration file, see master.cfg", required=True)
     parser.add_argument("--method", required=True,
-                        help="one of the test methods: 'acr', 'dcr', 'ccr', or 'p835', 'echo_impairment_test'")
+                        help="one of the test methods: 'acr', 'dcr', 'ccr', or 'p835', 'echo_impairment_test', 'psamd'")
     parser.add_argument("--p831_fest", action='store_true', help="Use the question set of P.831 for FEST")
     parser.add_argument("--clips", help="A csv containing urls of all clips to be rated in column 'rating_clips', in "
                                         "case of ccr/dcr it should also contain a column for 'references'")
@@ -614,9 +618,9 @@ if __name__ == '__main__':
     # check input arguments
     args = parser.parse_args()
 
-    methods = ['acr', 'dcr', 'ccr', 'p835', 'echo_impairment_test']
+    methods = ['acr', 'dcr', 'ccr', 'p835', 'echo_impairment_test', 'psamd']
     test_method = args.method.lower()
-    assert test_method in methods, f"No such a method supported, please select between 'acr', 'dcr', 'ccr', 'p835', 'echo_impairment_test'"
+    assert test_method in methods, f"No such a method supported, please select between 'acr', 'dcr', 'ccr', 'p835', 'echo_impairment_test', 'psamd'"
 
     p831_methods = ['acr', 'dcr', 'echo_impairment_test']
     if args.p831_fest:
@@ -636,7 +640,7 @@ if __name__ == '__main__':
     else:
         assert True, "Neither clips file not cloud store provided for rating clips"
 
-    if test_method in ['acr', 'p835', 'echo_impairment_test']:
+    if test_method in ['acr', 'p835', 'echo_impairment_test', 'psamd']:
         if args.gold_clips:
             assert os.path.exists(args.gold_clips), f"No csv file containing gold clips in {args.gold_clips}"
         elif cfg.has_option('GoldenSample', 'Path'):

@@ -27,6 +27,12 @@ body{font-family:Tahoma,"Times New Roman", Times, serif;}
     width: 30%;
 }
 
+.center-bg {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 70%;
+}
 .baudio {margin:5px;}
 .baudio .baudio_table{display: inline;}
 .baudio .bn{margin:10px;}
@@ -684,7 +690,7 @@ function showNextQuestionInTrainingSection(){
 	var count = $("#trainingTabs li").length;
 	id=$("#trainingTabs li.active").index();
 	if (id+1!=count){
-		if (!($('input[name="t'+ (id + 1) +'_slide"]').hasClass("slider_hide"))){
+		if (!($('input[name^="t'+ (id + 1) +'_slide"]').hasClass("slider_hide"))){
 			id=id+2;
 			$('#trainingTabs li:nth-child('+id+') a').tab('show');
 		} else {
@@ -718,9 +724,10 @@ function playedAudioTraining(id){
 	// parallel session check
 	isAnyParallelSession();
 	$('input[name="'+id+'"]').off('change');
-	$('input[name="'+id+'_slide"]').off('change');
-	enableSliderAfterPlayedAudioTraining();
+	$('input[name^="'+id+'_slide"]').off('change');
+	//enableSliderAfterPlayedAudioTraining();
 	trainingQuestionNumber= id.substring(1);
+	enableSliderAfterPlayedAudioTraining(trainingQuestionNumber);
 	eval("trainingStimulusPlayed["+trainingQuestionNumber+"-1]=1;");
 	console.log(trainingStimulusPlayed.reduce(getSum, 0))
 	if (trainingStimulusPlayed.reduce(getSum, 0) ==  trainingStimulusPlayed.length){
@@ -734,22 +741,20 @@ function playedAudioTraining(id){
 }
 
 function enableSlider(){
+	console.log("enableSlider")
 	$(this).addClass('slider').removeClass('slider_hide');	
 }
 
-function enableSliderAfterPlayedAudioTraining(){
-	var i;
-	// Training section
-	for (i = 0; i < config['trainingUrls'].length; i++) {
-		$('input[name="t{0}_slide"]'.f(i+1)).on('change', enableSlider);
-	}
+
+function enableSliderAfterPlayedAudioTraining(id){
+	$('input[name^="t{0}_slide"]'.f(id)).on('change', enableSlider);
 }
 
 function preventTabsChangeBeforeRateTraining(){
 	$('a[name="training"]').on('click', function (e) {
 		var count = $("#trainingTabs li").length;
 		id=$("#trainingTabs li.active").index();
-		if (($('input[name="t'+ (id + 1) +'_slide"]').hasClass("slider_hide"))){
+		if (($('input[name^="t'+ (id + 1) +'_slide"]').hasClass("slider_hide"))){
 			console.info("train");
 			e.stopImmediatePropagation();
 			alert('Please rate all');
@@ -761,7 +766,7 @@ function preventTabsChangeBeforeRateRating(){
 	$('a[name="rating"]').on('click', function (e) {
 		var count = $("#nav-tab-ul li").length;
 		id=$("#nav-tab-ul li.active").index();
-		if (($('input[name="q'+ (id + 1) +'_slide"]').hasClass("slider_hide"))){
+		if (($('input[name^="q'+ (id + 1) +'_slide"]').hasClass("slider_hide"))){
 			console.info("rate");
 			e.stopImmediatePropagation();
 			alert('Please rate all');
@@ -772,7 +777,7 @@ function preventTabsChangeBeforeRateRating(){
 function enableSliderAfterPlayedAudioQ(){
 	// Rating section
 	for (i = 0; i < config['questionUrls'].length; i++) {
-		$('input[name="q{0}_slide"]'.f(i+1)).on('change', enableSlider);
+		$('input[name^="q{0}_slide"]'.f(i+1)).on('change', enableSlider);
 	}
 }
 
@@ -912,16 +917,16 @@ function avoidAnsweringBeforeListeningThrough(){
 	// Training section
 	for (i = 0; i < config['trainingUrls'].length; i++) {
 		$('input[name="t{0}"]'.f(i+1)).on('change', alertForbiddenChange);
-		$('input[name="t{0}_slide"]'.f(i+1)).on('change', alertForbiddenChange);
-		$('input[name="t{0}_slide"]'.f(i+1)).on('change', resetValue);
+		$('input[name^="t{0}_slide"]'.f(i+1)).on('change', alertForbiddenChange);
+		$('input[name^="t{0}_slide"]'.f(i+1)).on('change', resetValue);
 		
 	}
 
 	// Rating section
 	for (i = 0; i < config['questionUrls'].length; i++) {
 		$('input[name="q{0}"]'.f(i+1)).on('change', alertForbiddenChange);
-		$('input[name="q{0}_slide"]'.f(i+1)).on('change', alertForbiddenChange);
-		$('input[name="q{0}_slide"]'.f(i+1)).on('change', resetValue);
+		$('input[name^="q{0}_slide"]'.f(i+1)).on('change', alertForbiddenChange);
+		$('input[name^="q{0}_slide"]'.f(i+1)).on('change', resetValue);
 	}
 
 	
@@ -958,7 +963,7 @@ function onValueChangeForTpQuestion(){
 function enableSliderSpecialQuestion(){
 	var count = $("#nav-tab-ul li").length;
 	id=$("#nav-tab-ul li.active").index() + 1;
-	$('input[name="q'+ id +'_slide"]').addClass('slider').removeClass('slider_hide');	
+	$('input[name^="q'+ id +'_slide"]').addClass('slider').removeClass('slider_hide');
 }
 
 /*
@@ -991,8 +996,8 @@ function playedAudioQ(id){
 		element.on('change', onValueChangeForGoldQuestion);
 	}else{
 		$('input[name="'+id+'"]').off('change');
-		$('input[name="'+id+'_slide"]').off('change');
-		$('input[name="'+id+'_slide"]').on('change', enableSlider);
+		$('input[name^="'+id+'_slide"]').off('change');
+		$('input[name^="'+id+'_slide"]').on('change', enableSlider);
 		//enableSliderAfterPlayedAudioQ()
 		// check if already this HIT is counted
 		if (!hitCounterIncreased){
@@ -1143,7 +1148,7 @@ function generate_training_section(){
 								<div class="col-sm-4"></div>
 								<div class="col-sm-4 infobox right-box"  title="Synonyms for Not Noisy" ><b>Not noisy:</b></br>Clean </br>Clean</br>Clean</div>
 							</div>
-  							<input type="range" min="0" max="100" class="slider_hide" id="T{0}-noise-slider" name="t{0}_slide">
+  							<input type="range" min="0" max="100" class="slider_hide" id="T{0}-noise-slider" name="t{0}_slide_noise">
 							<label for="noisy" class="pull-left" style="font-weight:normal;">Noisy</label>
 							<label for="" class="pull-right" style="font-weight:normal;">Not Noisy</label>
 						</div></br></br></br>
@@ -1156,7 +1161,7 @@ function generate_training_section(){
 								<div class="col-sm-4"> </div>   
 								<div class="col-sm-4 infobox right-box" title="Synonyms for Continuous" ><b>Continuous:</b></br>Smooth</br>Steady</br>Clean</div> 
 							</div>
-  							<input type="range" min="0" max="100" class="slider_hide" id="T{0}-discontinuity-slider" name="t{0}_slide">
+  							<input type="range" min="0" max="100" class="slider_hide" id="T{0}-discontinuity-slider" name="t{0}_slide_disc">
 							<label for="discontinous" class="pull-left" style="font-weight:normal;">Discontinuous</label>
 							<label for="" class="pull-right" style="font-weight:normal;">Continuous</label>
 						</div></br></br></br>
@@ -1169,7 +1174,7 @@ function generate_training_section(){
 								<div class="col-sm-4"></div>
 								<div class="col-sm-4 infobox right-box" title="Synonyms for Uncolored" ><b>Uncolored</b></br>Bright </br> Natural </br> Full</div>
 							</div>
-  							<input type="range" min="0" max="100" class="slider_hide" id="T{0}-coloration-slider" name="t{0}_slide">
+  							<input type="range" min="0" max="100" class="slider_hide" id="T{0}-coloration-slider" name="t{0}_slide_col">
 							<label for="" class="pull-left" style="font-weight:normal;">Colored</label>
 							<label for="" class="pull-right" style="font-weight:normal;">Uncolored</label>
 						</div></br></br></br>
@@ -1182,7 +1187,7 @@ function generate_training_section(){
 								<div class="col-sm-4"></div>
 								<div class="col-sm-4 infobox right-box"><b>Optimal Loudness</b></br>Pleasant</br>Pleasant</br>Constant</div>
 							</div>				
-  							<input type="range" min="0" max="100" class="slider_hide" id="T{0}-loudness-slider" name="t{0}_slide">
+  							<input type="range" min="0" max="100" class="slider_hide" id="T{0}-loudness-slider" name="t{0}_slide_loud">
 							<label for="" class="pull-left" style="font-weight:normal;">Non-optimal loudness</label>
 							<label for="" class="pull-right" style="font-weight:normal;">Optimal Loudness</label>
 						</div></br></br></br>
@@ -1234,20 +1239,20 @@ function generate_questionnaire_info(){
 						<li><b>Step 3</b>: To get to the next audiofile, navigate to the next tab </li>
 					</ul> 
 
-					<img src="https://audiosamplesp808.blob.core.windows.net/p808-assets/img/introduction_acr_multiple.png" class="center" alt="tabs" width="100px" />
+					<div class= "row"><img class= "center-bg" src="https://p808.s3.amazonaws.com/assets/img/introduction_acr_multiple.png"  alt="tabs"  /></div>
 
 					
 					<p>The last step of the training is to make yourself familiar with the different quality characteristics. As reference listen to following <b>clean and unimpaired speech sample</b>:</p>
-					<p align="center"><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t01_fb_clean.wav" id="t1">&nbsp;</span></p>
+					<p align="center"><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t01_fb_clean.wav" id="in_1">&nbsp;</span></p>
 					<b>Noisiness</b>
 					<p>Noisiness describes how noisy a speech sample sounds. Noise can be present as background noise or during speech and may be described with terms like &ldquo;humming&rdquo;, &ldquo;hissing&rdquo; or &ldquo;buzzy&rdquo;.</p>
 					<div class="row">
 					<div class="col-sm-4 col-sm-offset-1 ">
-						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t03_bgn_20db.wav" id="t2">&nbsp;</span></p>
+						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t03_bgn_20db.wav" id="in_2">&nbsp;</span></p>
 						<p>This sample is impaired with background noise.</p>
 					</div>
 					<div class="col-sm-5 col-sm-offset-2 ">
-						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t02_bgn_12db.wav" id="t3">&nbsp;</span></p>
+						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t02_bgn_12db.wav" id="in_3">&nbsp;</span></p>
 						<p>This sample is impaired with <b>strong</b> background noise.</p>
 					</div>
 					</div>
@@ -1255,11 +1260,11 @@ function generate_questionnaire_info(){
 					<p>Discontinuities may be described with terms like &ldquo;choppy&rdquo; or &ldquo;shaky&rdquo;. &ldquo;Pops&rdquo; and &ldquo;clicks&rdquo; may also be perceived as interruption.</p>
 					<div class="row">
 					<div class="col-sm-4 col-sm-offset-1 ">
-						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t09_time_clipping_02.wav" id="t4">&nbsp;</span></p>
+						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t09_time_clipping_02.wav" id="in_4">&nbsp;</span></p>
 						<p>This sample is impaired with temporal interruptions.</p>
 					</div>
 					<div class="col-sm-5 col-sm-offset-2 ">
-						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t08_time_clipping_20.wav" id="t5">&nbsp;</span></p>
+						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t08_time_clipping_20.wav" id="in_5">&nbsp;</span></p>
 						<p>This sample is impaired with <b>strong</b> temporal interruptions.</p>
 					</div>
 					</div>
@@ -1267,11 +1272,11 @@ function generate_questionnaire_info(){
 					<p>Coloration can be understood as any changes to the sound that lead to the speech sample sounding less &ldquo;pure&rdquo;. For example, the speech sample may sound &ldquo;muffled&rdquo; or &ldquo;thin&rdquo;, or less natural.</p>
 					<div class="row">
 					<div class="col-sm-4 col-sm-offset-1 ">
-						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t05_bp_100_5000.wav" id="t6">&nbsp;</span></p>
+						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t05_bp_100_5000.wav" id="in_6">&nbsp;</span></p>
 						<p>This sample is degraded by coloration.</p>
 					</div>
 					<div class="col-sm-5 col-sm-offset-2 ">
-						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t04_bp_500_2500.wav" id="t7">&nbsp;</span></p>
+						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t04_bp_500_2500.wav" id="in_7">&nbsp;</span></p>
 						<p>This sample is <b>strongly</b> degraded by coloration.</p>
 					</div>
 					</div>
@@ -1279,19 +1284,19 @@ function generate_questionnaire_info(){
 					<p>Loudness describes non-optimal loudness levels of the speech sample, i.e. the sample is too quiet or unpleasantly loud. Also, fluctuations of the playback level may be perceived as unpleasant.</p>
 					<div class="row">
 					<div class="col-sm-4 col-sm-offset-1 ">
-						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t07_level_minus_10db.wav" id="t8">&nbsp;</span></p>
-						<p>This sample is too quiet.</p>
+						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t07_level_minus_10db.wav" id="in_8">&nbsp;</span></p>
+						<p>This sample is quiet.</p>
 					</div>
 					<div class="col-sm-5 col-sm-offset-2 ">
-						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t06_level_minus_20db.wav" id="t9">&nbsp;</span></p>
-						<p>This sample is <b>very</b> quiet.</p>
+						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t06_level_minus_20db.wav" id="in_9">&nbsp;</span></p>
+						<p>This sample is <b>too</b> quiet.</p>
 					</div>
 					</div>
 					<b>Combinations</b>
 					<p>These four quality characteristics can also take place in combination with each other. For example, the next speech file is strongly colored but additionally also affected by background noise and discontinuities.</p>
 					<div class="row">
 					<div class="col-sm-2 col-sm-offset-5">
-						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t10_amrnb_fe_bgn.wav" id="t10">&nbsp;</span></p>
+						<p><span class="baudio" data-onfinished="playedAudioQT" data-src="https://s3-us-west-1.amazonaws.com/itutest.qu.tuberlin.de/PSAMD/Training_Samples/t10_amrnb_fe_bgn.wav" id="in_10">&nbsp;</span></p>
 					</div>
 					</div>
 					<p> There is no right or wrong answer as long as you listen to the audio files and give your opinion.</p>`;
@@ -1364,7 +1369,7 @@ function generate_rating_section(){
 								<div class="col-sm-4"></div>
 								<div class="col-sm-4 infobox right-box" title="Synonyms for Not Noisy" ><b>Not noisy:</b></br>Clean </br>Clean</br>Clean</div>
 							</div>
-  							<input type="range" min="0" max="100" class="slider_hide" id="q{0}-noise-slider" name="q{0}_slide">
+  							<input type="range" min="0" max="100" class="slider_hide" id="q{0}-noise-slider" name="q{0}_slide_noise">
 							<label for="" class="pull-left" style="font-weight:normal;">Noisy</label>
 							<label for="" class="pull-right" style="font-weight:normal;">Not Noisy</label>
 						</div></br></br></br>
@@ -1377,7 +1382,7 @@ function generate_rating_section(){
 								<div class="col-sm-4"> </div>   
 								<div class="col-sm-4 infobox right-box" title="Synonyms for Continuous" ><b>Continuous:</b></br>Smooth</br>Steady</br>Clean</div> 
 							</div>
-  							<input type="range" min="0" max="100" class="slider_hide" id="q{0}-discontinuity-slider" name="q{0}_slide">
+  							<input type="range" min="0" max="100" class="slider_hide" id="q{0}-discontinuity-slider" name="q{0}_slide_disc">
 							<label for="" class="pull-left" style="font-weight:normal;">Discontinuous</label>
 							<label for="" class="pull-right" style="font-weight:normal;">Continuous</label>
 						</div></br></br></br>
@@ -1390,7 +1395,7 @@ function generate_rating_section(){
 								<div class="col-sm-4"></div>
 								<div class="col-sm-4 infobox right-box" title="Synonyms for Uncolored" ><b>Uncolored</b></br>Bright </br> Natural </br> Full</div>
 							</div>
-  							<input type="range" min="0" max="100" class="slider_hide" id="q{0}-coloration-slider" name="q{0}_slide">
+  							<input type="range" min="0" max="100" class="slider_hide" id="q{0}-coloration-slider" name="q{0}_slide_col">
 							<label for="" class="pull-left" style="font-weight:normal;">Colored</label>
 							<label for="" class="pull-right" style="font-weight:normal;">Uncolored</label>
 						</div></br></br></br>
@@ -1403,7 +1408,7 @@ function generate_rating_section(){
 								<div class="col-sm-4"></div>
 								<div class="col-sm-4 infobox right-box"><b>Optimal Loudness</b></br>Pleasant</br>Pleasant</br>Constant</div>
 							</div>				
-  							<input type="range" min="0" max="100" class="slider_hide" id="q{0}-loudness-slider" name="q{0}_slide">
+  							<input type="range" min="0" max="100" class="slider_hide" id="q{0}-loudness-slider" name="q{0}_slide_loud">
 							<label for="" class="pull-left" style="font-weight:normal;">Non-optimal loudness</label>
 							<label for="" class="pull-right" style="font-weight:normal;">Optimal Loudness</label>
 						</div></br></br></br>

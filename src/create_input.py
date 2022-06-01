@@ -31,7 +31,7 @@ def validate_inputs(cfg, df, method):
     required_columns_acr = ['rating_clips', 'math', 'pair_a', 'pair_b', 'trapping_clips', 'trapping_ans']
     # tps are always the references.
     required_columns_ccr = ['rating_clips', 'references', 'math', 'pair_a', 'pair_b', 'trapping_clips']
-    if method in ['acr', 'p835', 'echo_impairment_test']:
+    if method in ['acr', 'p835', 'echo_impairment_test','psamd']:
         req = required_columns_acr
     else:
         req = required_columns_ccr
@@ -41,7 +41,7 @@ def validate_inputs(cfg, df, method):
 
     # check optionals
     #   gold_clips
-    if method in ['acr', 'p835', 'echo_impairment_test'] and 'number_of_gold_clips_per_session' in cfg and int(cfg['number_of_gold_clips_per_session'])>0:
+    if method in ['acr', 'p835', 'echo_impairment_test', 'psamd'] and 'number_of_gold_clips_per_session' in cfg and int(cfg['number_of_gold_clips_per_session'])>0:
         assert 'gold_clips' in columns, f"No column found with 'gold_clips' in input file"
         assert 'gold_clips_ans' in columns, f"No column found with 'gold_clips_ans' in input file " \
             f"(required since v.1.0)"
@@ -392,7 +392,7 @@ def create_input_for_mturk(cfg, df, method, output_path):
     :param df:  row input, see validate_inputs for details
     :param output_path: path to output file
     """
-    if method in ['acr', 'p835', 'echo_impairment_test']:
+    if method in ['acr', 'p835', 'echo_impairment_test', 'psamd']:
         return create_input_for_acr(cfg, df, output_path)
     else:
         return create_input_for_dcrccr(cfg, df, output_path)
