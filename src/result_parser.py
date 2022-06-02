@@ -83,7 +83,11 @@ def check_if_session_accepted(data):
         msg += "Gold or trapping clips question are answered wrongly;"
     if data['correct_tps'] < int(config['acceptance_criteria']['correct_tps_bigger_equal']):
         accept = False
-        msg += "Gold or trapping clips question are answered wrongly;"
+        msg += "trapping question is answered wrongly;"
+
+    if 'correct_gold_question' in data and data['correct_gold_question'] < int(config['accept_and_use']['gold_standard_bigger_equal']):
+        accept = False
+        msg += "Gold question is answered wrongly;"
 
     if not accept:
         data['Reject'] = msg
@@ -204,6 +208,7 @@ def check_variance(row):
     return -1
 
 
+wrong_gold =[]
 def check_gold_question(method, row):
     """
     Check if the gold_question is answered correctly
@@ -236,6 +241,8 @@ def check_gold_question(method, row):
                 if int(row[f'answer.{q_name}{suffix}']) in range(gq_correct_ans-gq_var, gq_correct_ans+gq_var+1):
                     correct_gq = 1
                     return correct_gq
+                else:
+                    wrong_gold.append({'url':gq_url, 'ans':int(row[f'answer.{q_name}{suffix}']), 'correct_ans': gq_correct_ans, 'worker':row['workerid']})
     except:
         return None
     return correct_gq
@@ -264,7 +271,7 @@ def check_math(input, output, audio_played):
     if audio_played == 0:
         return False
     keys = list(config['math'].keys())
-    ans = int(float(output))
+    ans = int(float(output.replace(' ', '')))
     # it could be a case that participant typed in the 2 or 3 numbers that they heard rather their sum.
     if ans > 9:
         ans = digitsum(ans)
@@ -360,7 +367,7 @@ def data_cleaning(filename, method):
         # step 4. check tps
         d['correct_tps'] = check_tps(row, method)
         # step5. check gold_standard, just for acr
-        if method in ['acr','p835', 'echo_impairment_test']:
+        if method in ['acr', 'p835', 'echo_impairment_test', 'psamd']:
             d['correct_gold_question'] = check_gold_question(method, row)
         # step6. check variance in a session rating
         d['variance_in_ratings'] = check_variance(row)
