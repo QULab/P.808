@@ -127,7 +127,7 @@ def check_audio_played(row, method):
     """
     question_played = 0
     try:
-        if method == 'acr':
+        if method in ['acr', 'psamd']:
             for q_name in question_names:
                 if int(row[f'answer.audio_n_finish_{q_name}']) > 0:
                     question_played += 1
@@ -157,7 +157,7 @@ def check_tps(row, method):
     """
     correct_tps = 0
     tp_url = row[config['trapping']['url_found_in']]
-    if method in ['acr', 'p835', 'echo_impairment_test']:
+    if method in ['acr', 'p835', 'echo_impairment_test', 'psamd']:
         tp_correct_ans = [int(float(row[config['trapping']['ans_found_in']]))]
     elif method == "dcr":
         tp_correct_ans = [4, 5]
@@ -694,6 +694,20 @@ def dict_value_to_key(d, value):
     return None
 
 
+def convert_vote_100_to_5(v):
+    """
+    formula from com12c85 , 2009 section 4.2.1
+    :param v:
+    :return:
+    """
+    # first convert it to [0,6]
+    tmp = (v/100)*6
+    v_1_to_5 = -0.0262 * (tmp ** 3) + 0.2368 * (tmp ** 2) + 0.1907*tmp + 1
+    tmp = min(5,v_1_to_5)
+    tmp = max(1, tmp)
+    return tmp
+
+
 method_to_mos = {
     "acr": 'MOS',
     "ccr": 'CMOS',
@@ -702,7 +716,12 @@ method_to_mos = {
     "p835_sig": 'MOS_SIG',
     "p835_ovrl": 'MOS_OVRL',
     "echo_impairment_test_echo": 'MOS_ECHO',
-    "echo_impairment_test_other": 'MOS_OTHER'
+    "echo_impairment_test_other": 'MOS_OTHER',
+    'psamd': 'MOS',
+    'psamd_slide_noise': 'N-MOS',
+    'psamd_slide_disc': 'D-MOS',
+    'psamd_slide_col': 'C-MOS',
+    'psamd_slide_loud': 'L-MOS'
 }
 
 p835_columns = ['condition_name', 'n', 'MOS_BAK', 'MOS_SIG', 'MOS_OVRL', 'std_bak', 'std_sig', 'std_ovrl',
@@ -714,6 +733,8 @@ question_names = []
 question_name_suffix = ''
 p835_suffixes = ['_bak', '_sig', '_ovrl']
 echo_impairment_test_suffixes = ['_echo', '_other']
+psamd_mos_suffixes = ['', '_noi', '_dis', '_col', '_lou']
+psamd_question_suffixes = ['', '_slide_noise', '_slide_disc', '_slide_col', '_slide_loud']
 create_per_worker = True
 
 
@@ -739,7 +760,7 @@ def transform(test_method, sessions, agrregate_on_condition, is_worker_specific)
             if session[config['trapping']['url_found_in']] == session[f'answer.{question}_url']:
                 continue
             # is it a gold clips
-            if test_method in ['acr', 'p835', 'echo_impairment_test'] and not found_gold_question and\
+            if test_method in ['acr', 'p835', 'echo_impairment_test','psamd'] and not found_gold_question and\
                     session[config['gold_question']['url_found_in']] == session[f'answer.{question}_url']:
                 found_gold_question = True
                 continue
@@ -768,7 +789,19 @@ def transform(test_method, sessions, agrregate_on_condition, is_worker_specific)
     for key in data_per_file.keys():
         tmp = dict()
         votes = data_per_file[key]
+        if question_name_suffix in psamd_question_suffixes and len(question_name_suffix) > 1:
+            votes = [convert_vote_100_to_5(v) for v in votes]
         vote_counter = 1
+        # apply z-score outlier detection
+        if (not (is_worker_specific) and 'outlier_removal' in config['accept_and_use']) \
+                and (config['accept_and_use']['outlier_removal'].lower() in ['true', '1', 't', 'y', 'yes']):
+            v_len = len(votes)
+            if v_len > 5:
+                votes = outliers_z_score(votes)
+                v_len_after = len(votes)
+                if v_len != v_len_after:
+                    print(
+                        f'File{key}: {v_len - v_len_after} votes are removed, remains {v_len_after}')
 
         # extra step:: add votes to the per-condition dict
         tmp_n = conv_filename_to_condition(key)
@@ -859,7 +892,7 @@ def create_headers_for_per_file_report(test_method, condition_keys):
     :return:
     """
     mos_name = method_to_mos[f"{test_method}{question_name_suffix}"]
-    if test_method in ["p835", "echo_impairment_test"]:
+    if test_method in ["p835", "echo_impairment_test", 'psamd']:
         header = ['file_url', 'n', mos_name, f'std{question_name_suffix}', f'95%CI{question_name_suffix}',
                   'short_file_name'] + condition_keys
     else:
@@ -928,6 +961,9 @@ def analyze_results(config, test_method, answer_path, list_of_req, quality_bonus
     elif test_method == 'echo_impairment_test':
         question_name_suffix = echo_impairment_test_suffixes[1]
         suffixes = echo_impairment_test_suffixes
+    elif test_method == 'psamd':
+        question_name_suffix = ''
+        suffixes = psamd_question_suffixes
     else:
         suffixes = ['']
     full_data, accepted_sessions = data_cleaning(answer_path, test_method)
@@ -962,7 +998,7 @@ def analyze_results(config, test_method, answer_path, list_of_req, quality_bonus
                 condition_set.append(pd.DataFrame(vote_per_condition))
             if create_per_worker:
                 write_dict_as_csv(data_per_worker, os.path.splitext(answer_path)[0] + f'_votes_per_worker_{question_name_suffix}.csv')
-        if use_condition_level and len(suffixes) > 1:
+        if use_condition_level and test_method in ['p835', 'echo_impairment_test']: # len(suffixes) > 1:
             # aggregate multiple conditions into one file for p.835
             full_set_conditions = None
             for df in condition_set:
@@ -974,8 +1010,7 @@ def analyze_results(config, test_method, answer_path, list_of_req, quality_bonus
             votes_per_all_cond_path = os.path.splitext(answer_path)[0] + f'_votes_per_cond_all.csv'
             column_names = p835_columns if test_method == 'p835' else echo_impairment_test_columns
             full_set_conditions.to_csv(votes_per_all_cond_path, index=False,
-                                       columns=['condition_name', 'n', 'MOS_BAK', 'MOS_SIG', 'MOS_OVRL', 'std_bak',
-                                                'std_sig', 'std_ovrl', '95%CI_bak', '95%CI_sig', '95%CI_ovrl'])
+                                       columns=column_names)
 
         bonus_file = os.path.splitext(answer_path)[0] + '_quantity_bonus_report.csv'
         quantity_bonus_df = calc_quantity_bonuses(full_data, list_of_req, bonus_file)
@@ -998,7 +1033,7 @@ if __name__ == '__main__':
     parser.add_argument("--cfg", required=True,
                         help="Contains the configurations see acr_result_parser.cfg as an example")
     parser.add_argument("--method", required=True,
-                        help="one of the test methods: 'acr', 'dcr', 'ccr', 'p835', or 'echo_impairment_test'")
+                        help="one of the test methods: 'acr', 'dcr', 'ccr', 'p835', or 'echo_impairment_test', 'psamd'")
     parser.add_argument("--answers", required=True,
                         help="Answers csv file, path relative to current directory")
 
@@ -1012,9 +1047,9 @@ if __name__ == '__main__':
     parser.add_argument('--quality_bonus', help="Quality bonus will be calculated. Just use it with your final download"
                                                 " of answers and when the project is completed", action="store_true")
     args = parser.parse_args()
-    methods = ['acr', 'dcr', 'ccr', 'p835', 'echo_impairment_test']
+    methods = ['acr', 'dcr', 'ccr', 'p835', 'echo_impairment_test', 'psamd']
     test_method = args.method.lower()
-    assert test_method in methods, f"No such a method supported, please select between 'acr', 'dcr', 'ccr', or 'p835'"
+    assert test_method in methods, f"No such a method supported, please select between 'acr', 'dcr', 'ccr', or 'p835', 'psamd'"
 
     cfg_path = args.cfg
     assert os.path.exists(cfg_path), f"No configuration file at [{cfg_path}]"
